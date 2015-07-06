@@ -18,89 +18,27 @@ public class Main {
 	private static final String NAME_CLASS = "StringUtils";
 
 	public static void main(String[] args) throws Exception {
-
-		ApplicationContext context = new AnnotationConfigApplicationContext(
-				"com.ukreugene.dbclassloader");
-
-		JdbcTemplate jt = context.getBean(JdbcTemplate.class);
-
-		// ----------------------------- read class file
-
-		byte[] sourceClassBytes;
-		InputStream inputStream = Main.class
-				.getResourceAsStream("/StringUtils.class");
-		try {
-			sourceClassBytes = IOUtils.toByteArray(inputStream);
-		} finally {
-			IOUtils.closeQuietly(inputStream);
-		}
-
-		// ------------------------- save class file to db
-
-		jt.update("insert into java_class values (?,?)", NAME_CLASS,
-				sourceClassBytes);
-
-		// ------------------------- restore class from db
-
-		byte[] classData = jt.queryForObject(
-				"select class from java_class where nameClass = ?",
-				new RowMapper<byte[]>() {
-					public byte[] mapRow(ResultSet rs, int rowNum)
-							throws SQLException {
-
-						Blob blob = rs.getBlob("class");
-
-						if (blob != null) {
-							InputStream inputStream = blob.getBinaryStream();
-							try {
-								return IOUtils.toByteArray(inputStream);
-							} catch (Exception e) {
-								e.printStackTrace();
-							} finally {
-								IOUtils.closeQuietly(inputStream);
-							}
-						}
-
-						return new byte[] {};
-					}
-
-				}, NAME_CLASS);
-
-		// --------------------- load class and try invole method -------------------------------
-
-		if (classData != null) {
-			IOClassLoader loader = new IOClassLoader();
-			Class<?> clazz = loader.loadFromInputStream(classData);
-
-			System.out.println(clazz.getName());
-
-			Method[] methods = clazz.getMethods();
-			for (Method method : methods) {
-
-				if ("trimToEmpty".equals(method.getName())) {
-
-					String testString = "    test   ";
-
-					System.out.println("test string: '" + testString + "'");
-
-					Object res = method.invoke(null, testString);
-
-					System.out.println("string after trim: '" + res + "'");
-				}
-
-			}
+		System.setProperty("spring.profiles.active", "hsql");
+		
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext("com.ukreugene.dbclassloader");
+		
+		URL resource = Main.class.getResource("/StringUtils.class"); 
+		byte[] sourceClassBytes = IOUtils.toByteArray(resource);
+		System.out.println(sourceClassBytes.length);
+		
+		ByteArrayStorage storage = context.getBean(ByteArrayStorage.class);
+		
+		storage.save(NAME_CLASS, sourceClassBytes);
+		
+		byte[] restoreClassBytes = storage.findByName(NAME_CLASS);
+		System.out.println(restoreClassBytes.length);
+		
+		CustomByteArrayClassLoader classLoader = context.getBean(CustomByteArrayClassLoader.class);
+		
+		Class<?> loadedClass = classLoader.loadClass(restoreClassBytes);
+		
+		if (loadedClass != null) {
+			System.out.println("Class has been loaded: '" + loadedClass.getName() + "'");
 		}
 	}
-
-	static class IOClassLoader extends URLClassLoader {
-		public IOClassLoader() {
-			super(new URL[] {});
-		}
-
-		public Class<?> loadFromInputStream(byte[] classData)
-				throws IOException {
-			return super.defineClass(null, classData, 0, classData.length);
-		}
-	}
-
 }
