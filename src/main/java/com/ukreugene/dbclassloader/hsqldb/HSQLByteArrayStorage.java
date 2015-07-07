@@ -11,9 +11,10 @@ import org.apache.commons.io.IOUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
-import com.ukreugene.dbclassloader.ByteArrayStorage;
+import com.ukreugene.dbclassloader.ByteArrayClassStorage;
+import com.ukreugene.dbclassloader.domain.JavaClass;
 
-class HSQLByteArrayStorage implements ByteArrayStorage, RowMapper<byte[]> {
+class HSQLByteArrayStorage implements ByteArrayClassStorage, RowMapper<JavaClass> {
 
 	private JdbcTemplate jdbcTemplate;
 
@@ -21,22 +22,26 @@ class HSQLByteArrayStorage implements ByteArrayStorage, RowMapper<byte[]> {
 		this.jdbcTemplate = new JdbcTemplate(ds);
 	}
 
-	public void save(String arrayName, byte[] byteArray) {
-		this.jdbcTemplate.update("insert into java_class values (?,?)", arrayName, byteArray);
+	public void save(JavaClass javaClass) {
+		this.jdbcTemplate.update("insert into java_class values (?,?)", javaClass.getNameClass(), javaClass.getDataClass());
 	}
 
-	public byte[] findByName(String arrayName) {
-		return this.jdbcTemplate.queryForObject("select class from java_class where nameClass = ?", this, arrayName);
+	public JavaClass findByName(String nameClass) {
+		return this.jdbcTemplate.queryForObject("select nameClass, class from java_class where nameClass = ?", this, nameClass);
 
 	}
 
-	public byte[] mapRow(ResultSet rs, int rowNum) throws SQLException {
+	public JavaClass mapRow(ResultSet rs, int rowNum) throws SQLException {
+		
 		Blob blob = rs.getBlob("class");
-
+		String nameClass = rs.getString("nameClass");
+		
+		byte[] dataClass = null;
+		
 		if (blob != null) {
 			InputStream inputStream = blob.getBinaryStream();
 			try {
-				return IOUtils.toByteArray(inputStream);
+				dataClass = IOUtils.toByteArray(inputStream);
 			} catch (Exception e) {
 				e.printStackTrace();
 			} finally {
@@ -44,7 +49,12 @@ class HSQLByteArrayStorage implements ByteArrayStorage, RowMapper<byte[]> {
 			}
 		}
 
-		return new byte[] {};
+		JavaClass javaClass = new JavaClass();
+		javaClass.setNameClass(nameClass);
+		javaClass.setDataClass(dataClass);
+		
+		
+		return javaClass;
 	}
 
 }

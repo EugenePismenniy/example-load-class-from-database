@@ -10,7 +10,7 @@ import org.springframework.jdbc.datasource.embedded.EmbeddedDatabase;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 
-import com.ukreugene.dbclassloader.ByteArrayStorage;
+import com.ukreugene.dbclassloader.ByteArrayClassStorage;
 
 @Configuration
 @Profile("hsql")
@@ -24,7 +24,7 @@ public class HSQLConfig {
 	
 	@Bean
 	@Autowired
-	public ByteArrayStorage byteArrayStorage(DataSource ds) {
+	public ByteArrayClassStorage byteArrayStorage(DataSource ds) {
 		return new HSQLByteArrayStorage(ds);
 	}
 }

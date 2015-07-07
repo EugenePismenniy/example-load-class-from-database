@@ -1,24 +1,19 @@
 package com.ukreugene.dbclassloader;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.net.URL;
-import java.net.URLClassLoader;
-import java.sql.*;
 
 import org.apache.commons.io.IOUtils;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
+
+import com.ukreugene.dbclassloader.domain.JavaClass;
 
 public class Main {
 
 	private static final String NAME_CLASS = "StringUtils";
 
 	public static void main(String[] args) throws Exception {
-		System.setProperty("spring.profiles.active", "hsql");
+		//System.setProperty("spring.profiles.active", "hsql");
+		System.setProperty("spring.profiles.active", "hibernate");
 		
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext("com.ukreugene.dbclassloader");
 		
@@ -26,19 +21,31 @@ public class Main {
 		byte[] sourceClassBytes = IOUtils.toByteArray(resource);
 		System.out.println(sourceClassBytes.length);
 		
-		ByteArrayStorage storage = context.getBean(ByteArrayStorage.class);
 		
-		storage.save(NAME_CLASS, sourceClassBytes);
+		JavaClass javaClass = new JavaClass();
+		javaClass.setNameClass(NAME_CLASS);
+		javaClass.setDataClass(sourceClassBytes);
 		
-		byte[] restoreClassBytes = storage.findByName(NAME_CLASS);
-		System.out.println(restoreClassBytes.length);
+		// -----------------------------------------------
 		
-		CustomByteArrayClassLoader classLoader = context.getBean(CustomByteArrayClassLoader.class);
+		ByteArrayClassStorage storage = context.getBean(ByteArrayClassStorage.class);
 		
-		Class<?> loadedClass = classLoader.loadClass(restoreClassBytes);
+		storage.save(javaClass);
 		
-		if (loadedClass != null) {
-			System.out.println("Class has been loaded: '" + loadedClass.getName() + "'");
+		JavaClass restoreClass = storage.findByName(NAME_CLASS);
+		
+		if (restoreClass != null && restoreClass.getDataClass() != null && restoreClass.getDataClass().length > 0) {
+		
+			byte[] dataClass = restoreClass.getDataClass();
+			System.out.println(dataClass.length);
+			
+			CustomByteArrayClassLoader classLoader = context.getBean(CustomByteArrayClassLoader.class);
+			
+			Class<?> loadedClass = classLoader.loadClass(dataClass);
+			
+			if (loadedClass != null) {
+				System.out.println("Class has been loaded: '" + loadedClass.getName() + "'");
+			}
 		}
 	}
 }
