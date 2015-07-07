@@ -13,7 +13,8 @@ public class Main {
 
 	public static void main(String[] args) throws Exception {
 		//System.setProperty("spring.profiles.active", "hsql");
-		System.setProperty("spring.profiles.active", "hibernate");
+		//System.setProperty("spring.profiles.active", "hibernate");
+		System.setProperty("spring.profiles.active", "sybase_hibernate");
 		
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext("com.ukreugene.dbclassloader");
 		

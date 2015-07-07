@@ -7,9 +7,11 @@ import javax.persistence.*;
 public class JavaClass {
 
 	@Id
-	@Column(name = "nameClass")
+	@Column(name = "nameClass")	
 	private String nameClass;
-	@Column(name = "class")
+	
+	@Lob
+	@Column(name = "class")	
 	private byte[] dataClass;
 
 	public String getNameClass() {

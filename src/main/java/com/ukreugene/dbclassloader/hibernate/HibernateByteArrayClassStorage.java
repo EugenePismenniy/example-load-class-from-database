@@ -5,7 +5,7 @@ import org.hibernate.*;
 import com.ukreugene.dbclassloader.ByteArrayClassStorage;
 import com.ukreugene.dbclassloader.domain.JavaClass;
 
-class HibernateByteArrayClassStorage implements ByteArrayClassStorage {
+public class HibernateByteArrayClassStorage implements ByteArrayClassStorage {
 
 	private SessionFactory sessionFactory;
 
