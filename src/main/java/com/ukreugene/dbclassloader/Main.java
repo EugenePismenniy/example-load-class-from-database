@@ -1,14 +1,13 @@
 package com.ukreugene.dbclassloader;
 
+import java.io.StringWriter;
+import java.io.Writer;
 import java.net.URL;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-import com.strobel.assembler.metadata.ArrayTypeLoader;
-import com.strobel.decompiler.Decompiler;
-import com.strobel.decompiler.DecompilerSettings;
-import com.strobel.decompiler.PlainTextOutput;
 import com.ukreugene.dbclassloader.domain.JavaClass;
 
 public class Main {
@@ -17,14 +16,19 @@ public class Main {
 
 	public static void main(String[] args) throws Exception {
 		//System.setProperty("spring.profiles.active", "hsql");
-		System.setProperty("spring.profiles.active", "hibernate");
+		// System.setProperty("spring.profiles.active", "hibernate");
 		// System.setProperty("spring.profiles.active", "sybase_hibernate");
+		System.setProperty("spring.profiles.active", "jpa");
 		
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext("com.ukreugene.dbclassloader");
 		
-		URL resource = Main.class.getResource("/StringUtils.class"); 
+		URL resource = Main.class.getResource("/StringUtils.class");
+		
+		System.out.println(FilenameUtils.getName(resource.getFile()));
+		
+		
 		byte[] sourceClassBytes = IOUtils.toByteArray(resource);
-		System.out.println(sourceClassBytes.length);
+		//System.out.println(sourceClassBytes.length);
 		
 		
 		JavaClass javaClass = new JavaClass();
@@ -49,7 +53,6 @@ public class Main {
 			
 			Class<?> loadedClass = classLoader.loadClass(dataClass);
 			
-			
 			String className = null;
 			
 			if (loadedClass != null) {
@@ -60,15 +63,10 @@ public class Main {
 			// -------------------- decompile byte code
 			if (className != null) {			
 				 
-				DecompilerSettings settings = DecompilerSettings.javaDefaults();
-				settings.setTypeLoader(new ArrayTypeLoader(dataClass));
-				
-				PlainTextOutput output = new PlainTextOutput();
-				
-				//Decompiler.decompile("org/apache/commons/lang3/StringUtils", output, settings);
-				Decompiler.decompile(className.replace('.', '/'), output, settings);
-				
-				System.out.println(output.toString());
+				CustomDecompiler decomp = context.getBean(CustomDecompiler.class);
+				Writer writer = new StringWriter(); 
+				decomp.decompile(className.replace('.', '/'), restoreClass.getDataClass(), writer);
+				System.out.println(writer.toString());
 			}
 		}
 	}
